@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Download files
         run: |
           mkdir -p app/src/main/assets/www
@@ -21,26 +21,24 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
 
       - name: Create project
         run: |
-          cat > settings.gradle << 'GRADLE'
-          pluginManagement { repositories { google() mavenCentral() gradlePluginPortal() } }
-          dependencyResolutionManagement { repositoriesMode.fallbackToProjectRepositoryRepositories()
-          repositories { google() mavenCentral() } }
+          mkdir -p app/src/main/assets/www
+          cp -r www/* app/src/main/assets/ 2>/dev/null || true
+          
+          cat > settings.gradle << 'EOF'
           rootProject.name = "CondominiosAres"
           include ':app'
-          GRADLE
+          EOF
 
-          cat > build.gradle << 'GRADLE'
+          cat > build.gradle << 'EOF'
           buildscript { repositories { google() mavenCentral() } }
           plugins { id 'com.android.application' version '8.1.0' apply false }
-          GRADLE
+          EOF
 
           mkdir -p app
-          cat > app/build.gradle << 'GRADLE'
+          cat > app/build.gradle << 'EOF'
           plugins { id 'com.android.application' }
           android {
               namespace 'com.inversionesares.condominios'
@@ -51,14 +49,15 @@ jobs:
                   targetSdk 34
               }
           }
-          GRADLE
+          dependencies { implementation 'androidx.appcompat:appcompat:1.6.1' }
+          EOF
 
           mkdir -p app/src/main
-          cat > app/src/main/AndroidManifest.xml << 'MANIFEST'
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
-              <application android:allowBackup="true" android:label="Condominios Ares">
+              <application android:label="Condominios Ares">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -67,10 +66,10 @@ jobs:
                   </activity>
               </application>
           </manifest>
-          MANIFEST
+          EOF
 
           mkdir -p app/src/main/java/com/inversionesares/condominios
-          cat > app/src/main/java/com/inversionesares/condominios/MainActivity.java << 'JAVA'
+          cat > app/src/main/java/com/inversionesares/condominios/MainActivity.java << 'EOF'
           package com.inversionesares.condominios;
           import android.app.Activity;
           import android.os.Bundle;
@@ -80,18 +79,26 @@ jobs:
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  WebView webView = new WebView(this);
-                  webView.getSettings().setJavaScriptEnabled(true);
-                  webView.getSettings().setDomStorageEnabled(true);
-                  webView.setWebViewClient(new WebViewClient());
-                  webView.loadUrl("file:///android_asset/www/index.html");
-                  setContentView(webView);
+                  WebView w = new WebView(this);
+                  w.getSettings().setJavaScriptEnabled(true);
+                  w.getSettings().setDomStorageEnabled(true);
+                  w.setWebViewClient(new WebViewClient());
+                  w.loadUrl("file:///android_asset/www/index.html");
+                  setContentView(w);
               }
           }
-          JAVA
+          EOF
 
-      - name: Build
-        run: ./gradlew assembleDebug -p app
+      - name: Install Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
+          unzip -q gradle.zip
+          export PATH=$PATH:$PWD/gradle-8.2/bin
+
+      - name: Build APK
+        run: |
+          export PATH=$PATH:$PWD/gradle-8.2/bin
+          $PWD/gradle-8.2/bin/gradle assembleDebug -p app
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
