@@ -1,0 +1,46 @@
+name: Build PWA APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install PWABuilder
+      run: npm install -g pwabuilder-api
+    
+    - name: Create PWABuilder config
+      run: |
+        cat > pwabuilder.config.json << 'EOF'
+        {
+          "apiVersion": 2,
+          "platforms": ["android"],
+          "android": {
+            "manifestFile": "www/manifest.json",
+            "packageName": "com.inversionesares.condominios",
+            "display": "standalone"
+          },
+          "webUrl": "https://gerencia.inversionesares2.com/condominios_app/www/"
+        }
+        EOF
+    
+    - name: Build Android APK
+      run: pwabuilder build -p android -o ./output
+    
+    - name: Upload APK as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: condominios-ares-apk
+        path: output/*.apk
