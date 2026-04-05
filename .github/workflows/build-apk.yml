@@ -89,16 +89,11 @@ jobs:
           }
           EOF
 
-      - name: Install Gradle
+      - name: Build APK
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
           unzip -q gradle.zip
-          export PATH=$PATH:$PWD/gradle-8.2/bin
-
-      - name: Build APK
-        run: |
-          export PATH=$PATH:$PWD/gradle-8.2/bin
-          gradle-8.2/bin/gradle assembleDebug -p app
+          ./gradle-8.2/bin/gradle assembleDebug -p app
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
