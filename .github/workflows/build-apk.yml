@@ -98,7 +98,7 @@ jobs:
       - name: Build APK
         run: |
           export PATH=$PATH:$PWD/gradle-8.2/bin
-          $PWD/gradle-8.2/bin/gradle assembleDebug -p app
+          gradle-8.2/bin/gradle assembleDebug -p app
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
