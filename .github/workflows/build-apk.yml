@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Download files
         run: |
           mkdir -p app/src/main/assets/www
@@ -21,7 +21,6 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
 
       - name: Create project files
         run: |
@@ -86,7 +85,12 @@ jobs:
           EOF
 
       - name: Build APK
-        run: ./gradlew assembleDebug -p app
+        run: |
+          cd app
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
+          unzip -q gradle.zip
+          chmod +x gradle-8.2/bin/gradle
+          gradle-8.2/bin/gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
