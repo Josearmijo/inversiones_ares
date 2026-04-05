@@ -91,9 +91,9 @@ jobs:
 
       - name: Build APK
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
-          unzip -q gradle.zip
-          ./gradle-8.2/bin/gradle assembleDebug -p app
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          /tmp/gradle-8.2/bin/gradle -p app assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
