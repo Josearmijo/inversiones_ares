@@ -54,12 +54,19 @@ jobs:
           plugins { id 'com.android.application' }
           android {
               namespace 'com.inversionesares.condominios'
-              compileSdk 34
+              compileSdk 33
               defaultConfig {
                   applicationId "com.inversionesares.condominios"
                   minSdk 21
-                  targetSdk 34
+                  targetSdk 33
               }
+          }
+          repositories {
+              google()
+              mavenCentral()
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
           }
           EOF
 
