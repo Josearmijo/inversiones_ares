@@ -9,14 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download files
-        run: |
-          mkdir -p app/src/main/assets/www
-          wget -q -O app/src/main/assets/www/index.html https://gerencia.inversionesares2.com/condominios_app/www/index.html
-          wget -q -O app/src/main/assets/www/manifest.json https://gerencia.inversionesares2.com/condominios_app/www/manifest.json
-          wget -q -O app/src/main/assets/www/app.js https://gerencia.inversionesares2.com/condominios_app/www/js/app.js
-          wget -q -O app/src/main/assets/www/condominios.css https://gerencia.inversionesares2.com/condominios_app/www/css/condominios.css
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -75,12 +67,36 @@ jobs:
           }
           EOF
 
+          mkdir -p app/src/main/res/drawable-hdpi
+          mkdir -p app/src/main/res/drawable-mdpi
+          mkdir -p app/src/main/res/drawable-xhdpi
+          mkdir -p app/src/main/res/drawable-xxhdpi
+          mkdir -p app/src/main/res/drawable-xxxhdpi
+          
+          wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://gerencia.inversionesares2.com/condominios_app/www/img/logo_ares2.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-mdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xxhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xxxhdpi/ic_launcher.png
+          
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
+          
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
           mkdir -p app/src/main
           cat > app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
-              <application android:allowBackup="true" android:label="Condominios Ares">
+              <application android:allowBackup="true" android:label="Condominios Ares" android:icon="@mipmap/ic_launcher">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -118,9 +134,10 @@ jobs:
           unzip -q gradle.zip
           chmod +x gradle-8.2/bin/gradle
           gradle-8.2/bin/gradle -p app assembleDebug
+          mv app/build/outputs/apk/debug/app-debug.apk InversionesAres2.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: condominios-ares
-          path: app/build/outputs/apk/debug/*.apk
+          path: InversionesAres2.apk
