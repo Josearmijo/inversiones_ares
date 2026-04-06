@@ -51,6 +51,10 @@ jobs:
 
           mkdir -p app
           cat > app/build.gradle << 'EOF'
+          properties {
+              property 'android.useAndroidX', 'true'
+              property 'android.enableJetifier', 'true'
+          }
           plugins { id 'com.android.application' }
           android {
               namespace 'com.inversionesares.condominios'
@@ -68,11 +72,6 @@ jobs:
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
           }
-          EOF
-
-          cat > app/gradle.properties << 'EOF'
-          android.useAndroidX=true
-          android.enableJetifier=true
           EOF
 
           mkdir -p app/src/main
