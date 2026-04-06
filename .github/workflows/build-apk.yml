@@ -23,15 +23,37 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create project
+      - name: Create project files
         run: |
           cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.fallbackToProjectRepositoryRepositories()
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
           rootProject.name = "CondominiosAres"
           include ':app'
           EOF
 
           cat > build.gradle << 'EOF'
-          plugins { id 'com.android.application' version '8.1.0' apply false }
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          plugins {
+              id 'com.android.application' version '8.1.0' apply false
+          }
           EOF
 
           mkdir -p app
