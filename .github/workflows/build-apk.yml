@@ -21,19 +21,16 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
+          distribution: 'temurin'
 
       - name: Create project
         run: |
-          mkdir -p app/src/main/assets/www
-          cp -r www/* app/src/main/assets/ 2>/dev/null || true
-          
           cat > settings.gradle << 'EOF'
           rootProject.name = "CondominiosAres"
           include ':app'
           EOF
 
           cat > build.gradle << 'EOF'
-          buildscript { repositories { google() mavenCentral() } }
           plugins { id 'com.android.application' version '8.1.0' apply false }
           EOF
 
@@ -49,7 +46,6 @@ jobs:
                   targetSdk 34
               }
           }
-          dependencies { implementation 'androidx.appcompat:appcompat:1.6.1' }
           EOF
 
           mkdir -p app/src/main
@@ -91,9 +87,11 @@ jobs:
 
       - name: Build APK
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp
-          /tmp/gradle-8.2/bin/gradle -p app assembleDebug
+          cd app
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
+          unzip -q gradle.zip
+          chmod +x gradle-8.2/bin/gradle
+          gradle-8.2/bin/gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
