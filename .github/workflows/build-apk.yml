@@ -80,7 +80,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
-              <application android:label="Condominios Ares">
+              <application android:allowBackup="true" android:label="Condominios Ares">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -106,7 +106,7 @@ jobs:
                   w.getSettings().setJavaScriptEnabled(true);
                   w.getSettings().setDomStorageEnabled(true);
                   w.setWebViewClient(new WebViewClient());
-                  w.loadUrl("file:///android_asset/www/index.html");
+                  w.loadUrl("https://gerencia.inversionesares2.com/condominios_app/www/");
                   setContentView(w);
               }
           }
