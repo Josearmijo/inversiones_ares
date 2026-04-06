@@ -73,7 +73,7 @@ jobs:
           mkdir -p app/src/main/res/drawable-xxhdpi
           mkdir -p app/src/main/res/drawable-xxxhdpi
           
-          wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://gerencia.inversionesares2.com/condominios_app/www/img/logo_ares2.png
+          wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://gerencia.inversionesares2.com/condominios_app/www/img/logo_ares2.png || wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://cdn-icons-png.flaticon.com/512/2965/2965327.png
           cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-mdpi/ic_launcher.png
           cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xhdpi/ic_launcher.png
           cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xxhdpi/ic_launcher.png
