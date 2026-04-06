@@ -23,7 +23,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create project
+      - name: Create project files
         run: |
           cat > settings.gradle << 'EOF'
           rootProject.name = "CondominiosAres"
