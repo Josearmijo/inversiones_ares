@@ -33,13 +33,6 @@ jobs:
                   gradlePluginPortal()
               }
           }
-          dependencyResolutionManagement {
-              repositoriesMode.fallbackToProjectRepositoryRepositories()
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
           rootProject.name = "CondominiosAres"
           include ':app'
           EOF
