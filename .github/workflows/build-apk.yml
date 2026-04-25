@@ -9,114 +9,177 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download files
-        run: |
-          mkdir -p app/src/main/assets/www
-          wget -q -O app/src/main/assets/www/index.html https://gerencia.inversionesares2.com/condominios_app/www/index.html
-          wget -q -O app/src/main/assets/www/manifest.json https://gerencia.inversionesares2.com/condominios_app/www/manifest.json
-          wget -q -O app/src/main/assets/www/app.js https://gerencia.inversionesares2.com/condominios_app/www/js/app.js
-          wget -q -O app/src/main/assets/www/condominios.css https://gerencia.inversionesares2.com/condominios_app/www/css/condominios.css
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create project files
+      - name: Download Gradle
+        run: wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip && unzip -q gradle.zip
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Create Gradle files
         run: |
-          cat > settings.gradle << 'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.fallbackToProjectRepositoryRepositories()
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "CondominiosAres"
-          include ':app'
+          cat > settings.gradle <<-EOF
+            pluginManagement {
+                repositories {
+                    google()
+                    mavenCentral()
+                    gradlePluginPortal()
+                }
+            }
+            rootProject.name = "CondominiosAres"
+            include ':app'
           EOF
 
-          cat > build.gradle << 'EOF'
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          plugins {
-              id 'com.android.application' version '8.1.0' apply false
-          }
+          cat > build.gradle <<-EOF
+            buildscript {
+                repositories {
+                    google()
+                    mavenCentral()
+                }
+            }
+            plugins {
+                id 'com.android.application' version '8.1.0' apply false
+            }
           EOF
 
-          mkdir -p app
-          cat > app/build.gradle << 'EOF'
-          plugins { id 'com.android.application' }
-          android {
-              namespace 'com.inversionesares.condominios'
-              compileSdk 34
-              defaultConfig {
-                  applicationId "com.inversionesares.condominios"
-                  minSdk 21
-                  targetSdk 34
-              }
-          }
+          echo "android.useAndroidX=true" > gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+
+      - name: Create directories
+        run: mkdir -p app/src/main/res/drawable-hdpi app/src/main/res/mipmap-hdpi app/src/main/java/com/inversionesares/condominios
+
+      - name: Download icon
+        run: |
+          wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://gerencia.inversionesares2.com/condominios_app/www/img/logo_ares2.png || \
+          wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://cdn-icons-png.flaticon.com/512/2965/2965327.png
+
+      - name: Copy icons
+        run: |
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-mdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xxhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xxxhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+      - name: Create app/build.gradle
+        run: |
+          cat > app/build.gradle <<-EOF
+            plugins { id 'com.android.application' }
+            android {
+                namespace 'com.inversionesares.condominios'
+                compileSdk 33
+                defaultConfig {
+                    applicationId "com.inversionesares.condominios"
+                    minSdk 21
+                    targetSdk 33
+                }
+            }
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                implementation 'androidx.appcompat:appcompat:1.6.1'
+            }
           EOF
 
-          mkdir -p app/src/main
-          cat > app/src/main/AndroidManifest.xml << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET" />
-              <application android:label="Condominios Ares">
-                  <activity android:name=".MainActivity" android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
+      - name: Create AndroidManifest.xml
+        run: |
+          cat > app/src/main/AndroidManifest.xml <<-EOF
+            <?xml version="1.0" encoding="utf-8"?>
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+                <uses-permission android:name="android.permission.INTERNET" />
+                <application android:allowBackup="true" android:label="Condominios Ares" android:icon="@mipmap/ic_launcher">
+                    <activity android:name=".MainActivity" android:exported="true">
+                        <intent-filter>
+                            <action android:name="android.intent.action.MAIN" />
+                            <category android:name="android.intent.category.LAUNCHER" />
+                        </intent-filter>
+                    </activity>
+                </application>
+            </manifest>
           EOF
 
-          mkdir -p app/src/main/java/com/inversionesares/condominios
-          cat > app/src/main/java/com/inversionesares/condominios/MainActivity.java << 'EOF'
-          package com.inversionesares.condominios;
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-          public class MainActivity extends Activity {
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  WebView w = new WebView(this);
-                  w.getSettings().setJavaScriptEnabled(true);
-                  w.getSettings().setDomStorageEnabled(true);
-                  w.setWebViewClient(new WebViewClient());
-                  w.loadUrl("file:///android_asset/www/index.html");
-                  setContentView(w);
-              }
-          }
+      - name: Create MainActivity.java
+        run: |
+          cat > app/src/main/java/com/inversionesares/condominios/MainActivity.java <<-EOF
+            package com.inversionesares.condominios;
+            import android.app.Activity;
+            import android.os.Bundle;
+            import android.webkit.WebView;
+            import android.webkit.WebViewClient;
+            import android.webkit.WebChromeClient;
+            import android.webkit.ValueCallback;
+            import android.net.Uri;
+            import android.content.Intent;
+
+            public class MainActivity extends Activity {
+                private WebView w;
+                private ValueCallback<Uri> mUploadMessage;
+
+                @Override
+                protected void onCreate(Bundle savedInstanceState) {
+                    super.onCreate(savedInstanceState);
+                    w = new WebView(this);
+                    w.getSettings().setJavaScriptEnabled(true);
+                    w.getSettings().setDomStorageEnabled(true);
+                    w.getSettings().setAllowFileAccess(true);
+                    w.getSettings().setAllowContentAccess(true);
+
+                    w.setWebChromeClient(new WebChromeClient() {
+                        public void openFileChooser(ValueCallback<Uri> uploadMsg) {
+                            mUploadMessage = uploadMsg;
+                            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                            i.addCategory(Intent.CATEGORY_OPENABLE);
+                            i.setType("image/*");
+                            startActivityForResult(Intent.createChooser(i, "Seleccionar imagen"), 1);
+                        }
+
+                        @Override
+                        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                            intent.setType("*/*");
+                            startActivityForResult(intent, 2);
+                            return true;
+                        }
+                    });
+
+                    w.setWebViewClient(new WebViewClient());
+                    w.loadUrl("https://gerencia.inversionesares2.com/condominios_app/www/");
+                    setContentView(w);
+                }
+
+                @Override
+                protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                    if (requestCode == 1 || requestCode == 2) {
+                        if (mUploadMessage != null) {
+                            Uri result = (data == null || resultCode != Activity.RESULT_OK) ? null : data.getData();
+                            mUploadMessage.onReceiveValue(result);
+                            mUploadMessage = null;
+                        }
+                    }
+                }
+            }
           EOF
 
       - name: Build APK
         run: |
-          cd app
-          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
-          unzip -q gradle.zip
           chmod +x gradle-8.2/bin/gradle
-          gradle-8.2/bin/gradle assembleDebug
+          gradle-8.2/bin/gradle -p app assembleDebug
+          mv app/build/outputs/apk/debug/app-debug.apk InversionesAres2.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: condominios-ares
-          path: app/build/outputs/apk/debug/*.apk
+          path: InversionesAres2.apk
