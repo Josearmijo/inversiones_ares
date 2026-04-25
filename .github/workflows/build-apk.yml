@@ -23,30 +23,8 @@ jobs:
 
       - name: Create Gradle files
         run: |
-          cat > settings.gradle <<-EOF
-            pluginManagement {
-                repositories {
-                    google()
-                    mavenCentral()
-                    gradlePluginPortal()
-                }
-            }
-            rootProject.name = "CondominiosAres"
-            include ':app'
-          EOF
-
-          cat > build.gradle <<-EOF
-            buildscript {
-                repositories {
-                    google()
-                    mavenCentral()
-                }
-            }
-            plugins {
-                id 'com.android.application' version '8.1.0' apply false
-            }
-          EOF
-
+          printf 'pluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\nrootProject.name = "CondominiosAres"\ninclude ":app"\n' > settings.gradle
+          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\nplugins {\n    id "com.android.application" version "8.1.0" apply false\n}\n' > build.gradle
           echo "android.useAndroidX=true" > gradle.properties
           echo "android.enableJetifier=true" >> gradle.properties
 
@@ -80,42 +58,11 @@ jobs:
 
       - name: Create app/build.gradle
         run: |
-          cat > app/build.gradle <<-EOF
-            plugins { id 'com.android.application' }
-            android {
-                namespace 'com.inversionesares.condominios'
-                compileSdk 33
-                defaultConfig {
-                    applicationId "com.inversionesares.condominios"
-                    minSdk 21
-                    targetSdk 33
-                }
-            }
-            repositories {
-                google()
-                mavenCentral()
-            }
-            dependencies {
-                implementation 'androidx.appcompat:appcompat:1.6.1'
-            }
-          EOF
+          printf 'plugins { id "com.android.application" }\nandroid {\n    namespace "com.inversionesares.condominios"\n    compileSdk 33\n    defaultConfig {\n        applicationId "com.inversionesares.condominios"\n        minSdk 21\n        targetSdk 33\n    }\n}\nrepositories {\n    google()\n    mavenCentral()\n}\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n}\n' > app/build.gradle
 
       - name: Create AndroidManifest.xml
         run: |
-          cat > app/src/main/AndroidManifest.xml <<-EOF
-            <?xml version="1.0" encoding="utf-8"?>
-            <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-                <uses-permission android:name="android.permission.INTERNET" />
-                <application android:allowBackup="true" android:label="Condominios Ares" android:icon="@mipmap/ic_launcher">
-                    <activity android:name=".MainActivity" android:exported="true">
-                        <intent-filter>
-                            <action android:name="android.intent.action.MAIN" />
-                            <category android:name="android.intent.category.LAUNCHER" />
-                        </intent-filter>
-                    </activity>
-                </application>
-            </manifest>
-          EOF
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <application android:allowBackup="true" android:label="Condominios Ares" android:icon="@mipmap/ic_launcher">\n        <activity android:name=".MainActivity" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
 
       - name: Create MainActivity.java
         run: |
