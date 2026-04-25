@@ -1,0 +1,153 @@
+#!/bin/bash
+
+cat > settings.gradle << 'EOF'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+rootProject.name = "CondominiosAres"
+include ':app'
+EOF
+
+cat > build.gradle << 'EOF'
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+plugins {
+    id 'com.android.application' version '8.1.0' apply false
+}
+EOF
+
+echo "android.useAndroidX=true" > gradle.properties
+echo "android.enableJetifier=true" >> gradle.properties
+
+mkdir -p app
+cat > app/build.gradle << 'EOF'
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.inversionesares.condominios'
+    compileSdk 33
+    defaultConfig {
+        applicationId "com.inversionesares.condominios"
+        minSdk 21
+        targetSdk 33
+    }
+}
+repositories {
+    google()
+    mavenCentral()
+}
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}
+EOF
+
+mkdir -p app/src/main/res/drawable-hdpi
+mkdir -p app/src/main/res/drawable-mdpi
+mkdir -p app/src/main/res/drawable-xhdpi
+mkdir -p app/src/main/res/drawable-xxhdpi
+mkdir -p app/src/main/res/drawable-xxxhdpi
+mkdir -p app/src/main/res/mipmap-hdpi
+mkdir -p app/src/main/res/mipmap-mdpi
+mkdir -p app/src/main/res/mipmap-xhdpi
+mkdir -p app/src/main/res/mipmap-xxhdpi
+mkdir -p app/src/main/res/mipmap-xxxhdpi
+mkdir -p app/src/main/java/com/inversionesares/condominios
+mkdir -p app/src/main
+
+wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://gerencia.inversionesares2.com/condominios_app/www/img/logo_ares2.png || wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://cdn-icons-png.flaticon.com/512/2965/2965327.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-mdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xhdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xxhdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xxxhdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-hdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-mdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+cat > app/src/main/AndroidManifest.xml << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application android:allowBackup="true" android:label="Condominios Ares" android:icon="@mipmap/ic_launcher">
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+EOF
+
+cat > app/src/main/java/com/inversionesares/condominios/MainActivity.java << 'EOF'
+package com.inversionesares.condominios;
+import android.app.Activity;
+import android.os.Bundle;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
+import android.webkit.ValueCallback;
+import android.net.Uri;
+import android.content.Intent;
+
+public class MainActivity extends Activity {
+    private WebView w;
+    private ValueCallback<Uri> mUploadMessage;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        w = new WebView(this);
+        w.getSettings().setJavaScriptEnabled(true);
+        w.getSettings().setDomStorageEnabled(true);
+        w.getSettings().setAllowFileAccess(true);
+        w.getSettings().setAllowContentAccess(true);
+        w.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        
+        w.setWebChromeClient(new WebChromeClient() {
+            public void openFileChooser(ValueCallback<Uri> uploadMsg) {
+                mUploadMessage = uploadMsg;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("image/*");
+                startActivityForResult(Intent.createChooser(i, "Seleccionar imagen"), 1);
+            }
+            
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+                mUploadMessage = null;
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("*/*");
+                startActivityForResult(intent, 2);
+                return true;
+            }
+        });
+        
+        w.setWebViewClient(new WebViewClient());
+        w.loadUrl("https://gerencia.inversionesares2.com/condominios_app/www/");
+        setContentView(w);
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1 || requestCode == 2) {
+            if (mUploadMessage != null) {
+                Uri result = (data == null || resultCode != Activity.RESULT_OK) ? null : data.getData();
+                mUploadMessage.onReceiveValue(result);
+                mUploadMessage = null;
+            }
+        }
+    }
+}
+EOF
+
+echo "Setup complete!"
