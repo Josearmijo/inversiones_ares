@@ -41,6 +41,11 @@ jobs:
           mkdir -p app/src/main/res/mipmap-xxhdpi
           mkdir -p app/src/main/res/mipmap-xxxhdpi
           mkdir -p app/src/main/java/com/inversionesares/condominios
+          mkdir -p app/src/main/res/values
+
+      - name: Create styles.xml
+        run: |
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">\n    </style>\n</resources>\n' > app/src/main/res/values/styles.xml
 
       - name: Download and copy icon
         run: |
@@ -58,16 +63,22 @@ jobs:
 
       - name: Create app/build.gradle
         run: |
-          printf 'plugins { id "com.android.application" }\nandroid {\n    namespace "com.inversionesares.condominios"\n    compileSdk 33\n    defaultConfig {\n        applicationId "com.inversionesares.condominios"\n        minSdk 21\n        targetSdk 33\n    }\n}\nrepositories {\n    google()\n    mavenCentral()\n}\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n}\n' > app/build.gradle
+          printf 'plugins { id "com.android.application" }\nandroid {\n    namespace "com.inversionesares.condominios"\n    compileSdk 33\n    defaultConfig {\n        applicationId "com.inversionesares.condominios"\n        minSdk 21\n        targetSdk 33\n    }\n    buildFeatures {\n        viewBinding true\n    }\n}\nrepositories {\n    google()\n    mavenCentral()\n}\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "androidx.webkit:webkit:1.6.1"\n}\n' > app/build.gradle
 
-      - name: Create AndroidManifest.xml
+      - name: Create AndroidManifest.xml with permissions
         run: |
-          printf '<?xml version="1.0" encoding="utf-8"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <application android:allowBackup="true" android:label="Condominios Ares" android:icon="@mipmap/ic_launcher">\n        <activity android:name=".MainActivity" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    \n    <application android:allowBackup="true" android:label="Condominios Ares" android:icon="@mipmap/ic_launcher" android:theme="@style/AppTheme" android:usesCleartextTraffic="true">\n        <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n        \n        <provider\n            android:name="androidx.core.content.FileProvider"\n            android:authorities="com.inversionesares.condominios.fileprovider"\n            android:exported="false"\n            android:grantUriPermissions="true">\n            <meta-data\n                android:name="android.support.FILE_PROVIDER_PATHS"\n                android:resource="@xml/file_paths" />\n        </provider>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
+
+      - name: Create file_paths.xml
+        run: |
+          mkdir -p app/src/main/res/xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<paths xmlns:android="http://schemas.android.com/apk/res/android">\n    <external-path name="external_files" path="." />\n    <files-path name="files" path="." />\n    <cache-path name="cache" path="." />\n    <external-files-path name="external_files" path="." />\n    <external-cache-path name="external_cache" path="." />\n</paths>\n' > app/src/main/res/xml/file_paths.xml
 
       - name: Create MainActivity.java
         run: |
           cat > app/src/main/java/com/inversionesares/condominios/MainActivity.java <<-EOF
             package com.inversionesares.condominios;
+            
             import android.app.Activity;
             import android.os.Bundle;
             import android.webkit.WebView;
@@ -76,56 +87,198 @@ jobs:
             import android.webkit.ValueCallback;
             import android.net.Uri;
             import android.content.Intent;
+            import android.Manifest;
+            import android.content.pm.PackageManager;
+            import android.os.Build;
+            import androidx.core.app.ActivityCompat;
+            import androidx.core.content.ContextCompat;
+            import android.webkit.WebSettings;
+            import android.webkit.WebResourceRequest;
+            import android.webkit.WebResourceResponse;
+            import android.webkit.WebResourceError;
+            import android.view.KeyEvent;
+            import android.widget.Toast;
+            import java.util.Arrays;
 
             public class MainActivity extends Activity {
-                private WebView w;
+                private WebView webView;
                 private ValueCallback<Uri> mUploadMessage;
+                private ValueCallback<Uri[]> mUploadMessages;
+                private static final int REQUEST_SELECT_FILE = 100;
+                private static final int REQUEST_CAMERA = 101;
+                private static final int REQUEST_PERMISSIONS = 102;
+                private String[] permissions = new String[]{
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.CAMERA
+                };
 
                 @Override
                 protected void onCreate(Bundle savedInstanceState) {
                     super.onCreate(savedInstanceState);
-                    w = new WebView(this);
-                    w.getSettings().setJavaScriptEnabled(true);
-                    w.getSettings().setDomStorageEnabled(true);
-                    w.getSettings().setAllowFileAccess(true);
-                    w.getSettings().setAllowContentAccess(true);
+                    
+                    // Request permissions
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (!hasPermissions()) {
+                            ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSIONS);
+                        }
+                    }
 
-                    w.setWebChromeClient(new WebChromeClient() {
+                    webView = new WebView(this);
+                    WebSettings settings = webView.getSettings();
+                    settings.setJavaScriptEnabled(true);
+                    settings.setDomStorageEnabled(true);
+                    settings.setAllowFileAccess(true);
+                    settings.setAllowContentAccess(true);
+                    settings.setAllowFileAccessFromFileURLs(true);
+                    settings.setAllowUniversalAccessFromFileURLs(true);
+                    settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+                    settings.setLoadWithOverviewMode(true);
+                    settings.setUseWideViewPort(true);
+                    settings.setSupportZoom(true);
+                    settings.setBuiltInZoomControls(true);
+                    settings.setDisplayZoomControls(false);
+                    settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+
+                    webView.setWebChromeClient(new WebChromeClient() {
+                        // For Android < 3.0
                         public void openFileChooser(ValueCallback<Uri> uploadMsg) {
                             mUploadMessage = uploadMsg;
-                            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-                            i.addCategory(Intent.CATEGORY_OPENABLE);
-                            i.setType("image/*");
-                            startActivityForResult(Intent.createChooser(i, "Seleccionar imagen"), 1);
-                        }
-
-                        @Override
-                        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                             intent.addCategory(Intent.CATEGORY_OPENABLE);
                             intent.setType("*/*");
-                            startActivityForResult(intent, 2);
+                            startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo"), REQUEST_SELECT_FILE);
+                        }
+
+                        // For Android 3.0+
+                        public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType) {
+                            mUploadMessage = uploadMsg;
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                            intent.setType("*/*");
+                            startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo"), REQUEST_SELECT_FILE);
+                        }
+
+                        // For Android 4.1+
+                        public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture) {
+                            mUploadMessage = uploadMsg;
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                            intent.setType("*/*");
+                            startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo"), REQUEST_SELECT_FILE);
+                        }
+
+                        // For Android 5.0+
+                        @Override
+                        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+                            mUploadMessages = filePathCallback;
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                            intent.setType("*/*");
+                            startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo"), REQUEST_SELECT_FILE);
                             return true;
                         }
                     });
 
-                    w.setWebViewClient(new WebViewClient());
-                    w.loadUrl("https://gerencia.inversionesares2.com/condominios_app/www/");
-                    setContentView(w);
+                    webView.setWebViewClient(new WebViewClient() {
+                        @Override
+                        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                            Toast.makeText(MainActivity.this, "Error de conexión", Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onPageFinished(WebView view, String url) {
+                            // Page loaded
+                        }
+                    });
+
+                    // Enable back button navigation
+                    webView.setOnKeyListener((view, keyCode, event) -> {
+                        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
+                            webView.goBack();
+                            return true;
+                        }
+                        return false;
+                    });
+
+                    webView.loadUrl("https://gerencia.inversionesares2.com/condominios_app/www/");
+                    setContentView(webView);
+                }
+
+                private boolean hasPermissions() {
+                    for (String permission : permissions) {
+                        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                            return false;
+                        }
+                    }
+                    return true;
                 }
 
                 @Override
                 protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-                    if (requestCode == 1 || requestCode == 2) {
-                        if (mUploadMessage != null) {
-                            Uri result = (data == null || resultCode != Activity.RESULT_OK) ? null : data.getData();
-                            mUploadMessage.onReceiveValue(result);
-                            mUploadMessage = null;
+                    super.onActivityResult(requestCode, resultCode, data);
+                    
+                    if (requestCode == REQUEST_SELECT_FILE) {
+                        if (resultCode == Activity.RESULT_OK) {
+                            if (mUploadMessages != null) {
+                                Uri[] results = null;
+                                if (data != null) {
+                                    String dataString = data.getDataString();
+                                    if (dataString != null) {
+                                        results = new Uri[]{data.getData()};
+                                    }
+                                }
+                                mUploadMessages.onReceiveValue(results);
+                                mUploadMessages = null;
+                            } else if (mUploadMessage != null) {
+                                Uri result = (data == null || resultCode != Activity.RESULT_OK) ? null : data.getData();
+                                mUploadMessage.onReceiveValue(result);
+                                mUploadMessage = null;
+                            }
+                        } else {
+                            if (mUploadMessages != null) {
+                                mUploadMessages.onReceiveValue(null);
+                                mUploadMessages = null;
+                            }
+                            if (mUploadMessage != null) {
+                                mUploadMessage.onReceiveValue(null);
+                                mUploadMessage = null;
+                            }
                         }
+                    }
+                }
+
+                @Override
+                public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                    if (requestCode == REQUEST_PERMISSIONS) {
+                        boolean allGranted = true;
+                        for (int result : grantResults) {
+                            if (result != PackageManager.PERMISSION_GRANTED) {
+                                allGranted = false;
+                                break;
+                            }
+                        }
+                        if (!allGranted) {
+                            Toast.makeText(this, "Se necesitan permisos para seleccionar archivos", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+
+                @Override
+                public void onBackPressed() {
+                    if (webView.canGoBack()) {
+                        webView.goBack();
+                    } else {
+                        super.onBackPressed();
                     }
                 }
             }
           EOF
+
+      - name: Create proguard-rules.pro
+        run: |
+          echo "-keep class com.inversionesares.condominios.** { *; }" > app/proguard-rules.pro
 
       - name: Build APK
         run: |
