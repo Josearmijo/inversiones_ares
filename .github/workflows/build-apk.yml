@@ -44,7 +44,7 @@ jobs:
 
       - name: Download and copy icon
         run: |
-          wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://gerencia.inversionesares2.com/condominios_app/www/img/logo_ares2.png || \
+          wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://gerencia.inversionesares2.com/condominios_app/www/img/logo_oscuro.png || \
           wget -q -O app/src/main/res/drawable-hdpi/ic_launcher.png https://cdn-icons-png.flaticon.com/512/2965/2965327.png
           cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-mdpi/ic_launcher.png
           cp app/src/main/res/drawable-hdpi/ic_launcher.png app/src/main/res/drawable-xhdpi/ic_launcher.png
@@ -80,7 +80,6 @@ jobs:
             public class MainActivity extends Activity {
                 private WebView w;
                 private ValueCallback<Uri> mUploadMessage;
-                private ValueCallback<Uri[]> mUploadMessageArray;
 
                 @Override
                 protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +91,6 @@ jobs:
                     w.getSettings().setAllowContentAccess(true);
 
                     w.setWebChromeClient(new WebChromeClient() {
-                        @SuppressWarnings("unused")
                         public void openFileChooser(ValueCallback<Uri> uploadMsg) {
                             mUploadMessage = uploadMsg;
                             Intent i = new Intent(Intent.ACTION_GET_CONTENT);
@@ -103,11 +101,10 @@ jobs:
 
                         @Override
                         public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
-                            mUploadMessageArray = filePathCallback;
                             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                             intent.addCategory(Intent.CATEGORY_OPENABLE);
-                            intent.setType("image/*");
-                            startActivityForResult(Intent.createChooser(intent, "Seleccionar imagen"), 2);
+                            intent.setType("*/*");
+                            startActivityForResult(intent, 2);
                             return true;
                         }
                     });
@@ -119,17 +116,11 @@ jobs:
 
                 @Override
                 protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-                    if (requestCode == 1) {
+                    if (requestCode == 1 || requestCode == 2) {
                         if (mUploadMessage != null) {
                             Uri result = (data == null || resultCode != Activity.RESULT_OK) ? null : data.getData();
                             mUploadMessage.onReceiveValue(result);
                             mUploadMessage = null;
-                        }
-                    } else if (requestCode == 2) {
-                        if (mUploadMessageArray != null) {
-                            Uri result = (data == null || resultCode != Activity.RESULT_OK) ? null : data.getData();
-                            mUploadMessageArray.onReceiveValue(new Uri[]{result});
-                            mUploadMessageArray = null;
                         }
                     }
                 }
